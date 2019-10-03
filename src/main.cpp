@@ -36,12 +36,16 @@ int main() {
       rightMotor2.spin(vex::directionType::fwd, Controller.Axis2.position(), vex::velocityUnits::pct); 
       if(Controller.ButtonR1.pressing()) {
         intakeMotor1.spin(vex::directionType::fwd, intakeSpeed, vex::velocityUnits::pct);
+        intakeMotor2.spin(vex::directionType::fwd, intakeSpeed, vex::velocityUnits::pct);
       }
       else{
         intakeMotor1.stop();
+        intakeMotor2.stop();
       }
       if(Controller.ButtonL1.pressing()) {
         armMotor.spin(vex::directionType::fwd, armSpeed, vex::velocityUnits::pct);
       }
+      else
+        armMotor.stop();
     }
 }
