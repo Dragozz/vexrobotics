@@ -24,8 +24,8 @@ vex::motor armMotor = vex::motor(vex::PORT7);
 vex::motor angleMotor = vex::motor(vex::PORT8);
 vex::controller Controller = vex::controller();
 
-int intakeSpeed = 50;
-int armSpeed = 50;
+int intakeSpeed = 100;
+int armSpeed = 100;
 int main() {
     vex::task::sleep(2000);
     Brain.Screen.print("User Program has Started.");
