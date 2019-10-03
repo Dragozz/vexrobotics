@@ -33,7 +33,7 @@ int main() {
       leftMotor1.spin(vex::directionType::fwd, Controller.Axis3.position(), vex::velocityUnits::pct);
       leftMotor2.spin(vex::directionType::fwd, Controller.Axis3.position(), vex::velocityUnits::pct);
       rightMotor1.spin(vex::directionType::fwd, Controller.Axis2.position(), vex::velocityUnits::pct);
-      rightMotor2.spin(vex::directionType::fwd, Controller.Axis2.position(), vex::velocityUnits::pct); //test123
+      rightMotor2.spin(vex::directionType::fwd, Controller.Axis2.position(), vex::velocityUnits::pct); 
       if(Controller.ButtonR1.pressing()) {
         intakeMotor1.spin(vex::directionType::fwd, intakeSpeed, vex::velocityUnits::pct);
       }
