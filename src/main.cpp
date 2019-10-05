@@ -21,31 +21,63 @@ vex::motor rightMotor2 = vex::motor(vex::PORT4, true);
 vex::motor intakeMotor1 = vex::motor(vex::PORT5);
 vex::motor intakeMotor2 = vex::motor(vex::PORT6);
 vex::motor armMotor = vex::motor(vex::PORT7);
-vex::motor angleMotor = vex::motor(vex::PORT8);
+vex::motor leverMotor = vex::motor(vex::PORT8);
 vex::controller Controller = vex::controller();
 
 int intakeSpeed = 100;
 int armSpeed = 100;
+int leverSpeed = 50;
+bool intakeOn = false;
 int main() {
     vex::task::sleep(2000);
     Brain.Screen.print("User Program has Started.");
     while(1) {
+      //chassis movement
       leftMotor1.spin(vex::directionType::fwd, Controller.Axis3.position(), vex::velocityUnits::pct);
       leftMotor2.spin(vex::directionType::fwd, Controller.Axis3.position(), vex::velocityUnits::pct);
       rightMotor1.spin(vex::directionType::fwd, Controller.Axis2.position(), vex::velocityUnits::pct);
       rightMotor2.spin(vex::directionType::fwd, Controller.Axis2.position(), vex::velocityUnits::pct); 
+      //toggle intake
       if(Controller.ButtonR1.pressing()) {
-        intakeMotor1.spin(vex::directionType::fwd, intakeSpeed, vex::velocityUnits::pct);
-        intakeMotor2.spin(vex::directionType::fwd, intakeSpeed, vex::velocityUnits::pct);
+        if(intakeOn) {
+          intakeMotor1.stop();
+          intakeMotor2.stop();
+        }
+        if(!intakeOn) {
+          intakeMotor1.spin(vex::directionType::fwd, intakeSpeed, vex::velocityUnits::pct);
+          intakeMotor2.spin(vex::directionType::fwd, intakeSpeed, vex::velocityUnits::pct);
+          intakeOn = true;
+        }
       }
-      else{
-        intakeMotor1.stop();
-        intakeMotor2.stop();
-      }
+      //manual control for arm
       if(Controller.ButtonL1.pressing()) {
         armMotor.spin(vex::directionType::fwd, armSpeed, vex::velocityUnits::pct);
       }
+      else if(Controller.ButtonL2.pressing()) {
+        armMotor.spin(vex::directionType::rev, armSpeed, vex::velocityUnits::pct);
+      }
       else
         armMotor.stop();
+      //move lever up to 90 degrees (needs finetuning)
+      if(Controller.ButtonUp.pressing()) {
+        leverMotor.spin(vex::directionType::fwd, leverSpeed, vex::velocityUnits::pct);
+        vex::task::sleep(2000);
+        leverMotor.stop();
+      }
+      //move lever back down (needs finetuning)
+      if(Controller.ButtonDown.pressing()) {
+        leverMotor.spin(vex::directionType::rev, leverSpeed, vex::velocityUnits::pct);
+        vex::task::sleep(2000);
+        leverMotor.stop();
+      }
+      //manual control for lever
+      if(Controller.ButtonX.pressing()) {
+        leverMotor.spin(vex::directionType::fwd, armSpeed, vex::velocityUnits::pct);
+      }
+      else if(Controller.ButtonB.pressing()) {
+        leverMotor.spin(vex::directionType::rev, armSpeed, vex::velocityUnits::pct);
+      }
+      else
+        leverMotor.stop();
     }
 }
