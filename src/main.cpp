@@ -25,6 +25,7 @@
 // /*----------------------------------------------------------------------------*/
 
 #include "vex.h"
+#include "vision.h"
 
 using namespace vex;
  
@@ -43,6 +44,28 @@ using namespace vex;
  int armSpeed = 100;
  int leverSpeed = 100;
  bool intakeOn = false;
+ bool userControl = true;
+ void auton(void) {
+  vision::object *cube;
+  cube = &vs.largestObject;
+  vs.takeSnapshot(ORANGE);
+  leftMotor1.spin(forward, 50, vex::velocityUnits::pct);
+  leftMotor2.spin(forward, 50, vex::velocityUnits::pct);
+  rightMotor1.spin(reverse, 50, vex::velocityUnits::pct);
+  rightMotor2.spin(reverse, 50, vex::velocityUnits::pct);
+  while(true) {
+    if(cube->exists && cube->width > 20) {
+      break;
+    }
+    vs.takeSnapshot(ORANGE);
+  }
+  leftMotor1.stop();
+  leftMotor2.stop();
+  rightMotor1.stop();
+  rightMotor2.stop();
+  
+  //cube->centerX;
+ }
  void intake() {
    if(intakeOn) {
      intakeMotor1.stop();
@@ -58,9 +81,9 @@ using namespace vex;
 int main() {
   // Initializing Robot Configuration. DO NOT REMOVE!
   vexcodeInit();
-  vex::task::sleep(2000);
+  vex::task::sleep(1000);
      Brain.Screen.print("User Program has Started.");
-     while(1) {
+     while(userControl) {
        //chassis movement
        leftMotor1.spin(forward, Controller.Axis3.position(), vex::velocityUnits::pct);
        leftMotor2.spin(forward, Controller.Axis3.position(), vex::velocityUnits::pct);
@@ -96,4 +119,6 @@ int main() {
        else
          leverMotor.stop();
      }
+     //vs.takeSnapshot(ORANGE);
+     //if(vs.largestObject.exists)
 }
