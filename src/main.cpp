@@ -39,32 +39,67 @@ using namespace vex;
  vex::motor armMotor = vex::motor(vex::PORT7);
  vex::motor leverMotor = vex::motor(vex::PORT8);
  vex::controller Controller = vex::controller();
- 
+ vex::motor_group leftGroup = vex::motor_group(leftMotor1, leftMotor2);
+ vex::motor_group rightGroup = vex::motor_group(rightMotor1, rightMotor2);
+ vex::gyro GYRO = vex::gyro(Brain.ThreeWirePort.A);
+ vex::smartdrive base = vex::smartdrive(leftGroup, rightGroup, GYRO,319, 320, 130, distanceUnits::mm, 1);
  int intakeSpeed = 100;
  int armSpeed = 100;
  int leverSpeed = 100;
  bool intakeOn = false;
  bool userControl = true;
+ int max(int i, int j, int k) {
+   if(i > j && i > k)
+    return i;
+   else if(j > k)
+    return j;
+   else
+    return k;
+ }
  void auton(void) {
   vision::object *cube;
   cube = &vs.largestObject;
-  vs.takeSnapshot(ORANGE);
-  leftMotor1.spin(forward, 50, vex::velocityUnits::pct);
-  leftMotor2.spin(forward, 50, vex::velocityUnits::pct);
-  rightMotor1.spin(reverse, 50, vex::velocityUnits::pct);
-  rightMotor2.spin(reverse, 50, vex::velocityUnits::pct);
-  while(true) {
-    if(cube->exists && cube->width > 20) {
-      break;
-    }
+  for(int j = 0; j < 8; j++) {
+    //finds closest cube
     vs.takeSnapshot(ORANGE);
-  }
-  leftMotor1.stop();
-  leftMotor2.stop();
-  rightMotor1.stop();
-  rightMotor2.stop();
-  
-  //cube->centerX;
+    int orangeWidth = cube-> width;
+    vs.takeSnapshot(GREEN);
+    int greenWidth = cube->width;
+    vs.takeSnapshot(PURPLE);
+    int purpleWidth = cube-> width;
+    int closestWidth = max(orangeWidth, greenWidth, purpleWidth); 
+    int i;
+    if(closestWidth == orangeWidth)
+      i = 0;
+    else if(closestWidth == greenWidth)
+      i = 1;
+    else
+      i = 2;
+    base.turn(right);
+    while(!cube->exists && cube->width < 20) {
+      vs.takeSnapshot(vs.objects[i].exists);
+    }
+    base.stop(brake);
+    Controller.Screen.print("Cube found!");
+    Controller.Screen.newLine();
+    Controller.Screen.print("Moving..."); 
+    //starts moving towards cube 
+    while(cube->width < 250) {
+      if(cube->centerX > 170)
+        base.turn(right);
+      else if(cube->centerX < 130) 
+        base.turn(left);
+      else
+        base.drive(forward);
+      vs.takeSnapshot(vs.objects[i].exists);
+    }
+    base.stop(brake);
+    Controller.Screen.print("Cube reached.");
+    //intake cube
+    intakeMotor1.spin(forward, intakeSpeed, vex::velocityUnits::pct);
+    intakeMotor2.spin(forward, intakeSpeed, vex::velocityUnits::pct);
+    base.driveFor(forward, 150, mm);
+    }
  }
  void intake() {
    if(intakeOn) {
