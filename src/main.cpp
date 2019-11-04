@@ -46,7 +46,9 @@ using namespace vex;
  int intakeSpeed = 100;
  int armSpeed = 100;
  int leverSpeed = 100;
+ int rate = 1;
  bool intakeOn = false;
+ bool speed = false;
  bool userControl = true;
  int max(int i, int j, int k) {
    if(i > j && i > k)
@@ -57,50 +59,55 @@ using namespace vex;
     return k;
  }
  void auton(void) {
-  vision::object *cube;
-  cube = &vs.largestObject;
-  for(int j = 0; j < 8; j++) {
-    //finds closest cube
-    vs.takeSnapshot(ORANGE);
-    int orangeWidth = cube-> width;
-    vs.takeSnapshot(GREEN);
-    int greenWidth = cube->width;
-    vs.takeSnapshot(PURPLE);
-    int purpleWidth = cube-> width;
-    int closestWidth = max(orangeWidth, greenWidth, purpleWidth); 
-    int i;
-    if(closestWidth == orangeWidth)
-      i = 0;
-    else if(closestWidth == greenWidth)
-      i = 1;
-    else
-      i = 2;
-    base.turn(right);
-    while(!cube->exists && cube->width < 20) {
-      vs.takeSnapshot(vs.objects[i].exists);
-    }
-    base.stop(brake);
-    Controller.Screen.print("Cube found!");
-    Controller.Screen.newLine();
-    Controller.Screen.print("Moving..."); 
-    //starts moving towards cube 
-    while(cube->width < 250) {
-      if(cube->centerX > 170)
-        base.turn(right);
-      else if(cube->centerX < 130) 
-        base.turn(left);
-      else
-        base.drive(forward);
-      vs.takeSnapshot(vs.objects[i].exists);
-    }
-    base.stop(brake);
-    Controller.Screen.print("Cube reached.");
-    //intake cube
-    intakeMotor1.spin(forward, intakeSpeed, vex::velocityUnits::pct);
-    intakeMotor2.spin(forward, intakeSpeed, vex::velocityUnits::pct);
-    base.driveFor(forward, 150, mm);
-    }
+   
  }
+//  void auton(void) {
+//   vision::object *cube;
+//   vision::signature colors[3] = {ORANGE, GREEN, PURPLE};
+//   cube = &vs.largestObject;
+//   for(int j = 0; j < 8; j++) {
+//     //finds closest cube
+//     vs.takeSnapshot(ORANGE);
+//     int orangeWidth = cube-> width;
+//     vs.takeSnapshot(GREEN);
+//     int greenWidth = cube->width;
+//     vs.takeSnapshot(PURPLE);
+//     int purpleWidth = cube-> width;
+//     int closestWidth = max(orangeWidth, greenWidth, purpleWidth); 
+//     int i;
+//     if(closestWidth == orangeWidth)
+//       i = 0;
+//     else if(closestWidth == greenWidth)
+//       i = 1;
+//     else
+//       i = 2;
+//     base.turn(right);
+//     while(!cube->exists || cube->width < 20) {
+//       vs.takeSnapshot(colors[i]);
+//     }
+//     base.stop(brake);
+//     Controller.Screen.clearScreen();
+//     Controller.Screen.print("Cube found!");
+//     Controller.Screen.newLine();
+//     Controller.Screen.print("Moving..."); 
+//     //starts moving towards cube 
+//     while(cube->width < 250) {
+//       if(cube->centerX > 170)
+//         base.turn(right);
+//       else if(cube->centerX < 130) 
+//         base.turn(left);
+//       else
+//         base.drive(forward);
+//       vs.takeSnapshot(colors[i]);
+//     }
+//     base.stop(brake);
+//     Controller.Screen.print("Cube reached.");
+//     //intake cube
+//     intakeMotor1.spin(forward, intakeSpeed, vex::velocityUnits::pct);
+//     intakeMotor2.spin(forward, intakeSpeed, vex::velocityUnits::pct);
+//     base.driveFor(forward, 150, mm);
+//     }
+//  }
  void intake() {
    if(intakeOn) {
      intakeMotor1.stop();
@@ -113,19 +120,33 @@ using namespace vex;
      intakeOn = true;
    }
  }
+ void toggleSpeed() {
+   if(speed) {
+     rate = 1;
+     Controller.Screen.print("Now at 100% speed.");
+     speed = false;
+   }
+   else if(!speed) {
+     rate = 2;
+     Controller.Screen.print("Now at 50% speed.");
+     speed = true;
+   }
+ }
 int main() {
   // Initializing Robot Configuration. DO NOT REMOVE!
   vexcodeInit();
   vex::task::sleep(1000);
      Brain.Screen.print("User Program has Started.");
+     Controller.Screen.clearScreen();
      while(userControl) {
        //chassis movement
-       leftMotor1.spin(forward, Controller.Axis3.position(), vex::velocityUnits::pct);
-       leftMotor2.spin(forward, Controller.Axis3.position(), vex::velocityUnits::pct);
-       rightMotor1.spin(forward, Controller.Axis2.position(), vex::velocityUnits::pct);
-       rightMotor2.spin(forward, Controller.Axis2.position(), vex::velocityUnits::pct); 
+       leftMotor1.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
+       leftMotor2.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
+       rightMotor1.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct);
+       rightMotor2.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct); 
        //toggle intake
        Controller.ButtonR1.pressed(intake);
+       Controller.ButtonR2.pressed(toggleSpeed);
        //manual control for arm
        if(Controller.ButtonL1.pressing()) {
          armMotor.spin(forward, armSpeed, vex::velocityUnits::pct);
