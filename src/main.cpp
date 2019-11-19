@@ -25,10 +25,10 @@ vex::motor leftMotor1 = vex::motor(vex::PORT1);
 vex::motor leftMotor2 = vex::motor(vex::PORT2);
 vex::motor rightMotor1 = vex::motor(vex::PORT3, true);
 vex::motor rightMotor2 = vex::motor(vex::PORT4, true);
-vex::motor intakeMotor1 = vex::motor(vex::PORT5);
-vex::motor intakeMotor2 = vex::motor(vex::PORT6, true);
-vex::motor armMotor = vex::motor(vex::PORT7);
-vex::motor leverMotor = vex::motor(vex::PORT8);
+vex::motor intakeMotor1 = vex::motor(vex::PORT5, vex::gearSetting::ratio36_1);
+vex::motor intakeMotor2 = vex::motor(vex::PORT6, vex::gearSetting::ratio36_1, true);
+vex::motor armMotor = vex::motor(vex::PORT7); //change to torque motor later
+vex::motor leverMotor = vex::motor(vex::PORT8, vex::gearSetting::ratio36_1);
 vex::controller Controller = vex::controller();
 vex::motor_group leftGroup = vex::motor_group(leftMotor1, leftMotor2);
 vex::motor_group rightGroup = vex::motor_group(rightMotor1, rightMotor2);
@@ -210,6 +210,9 @@ void usercontrol(void) {
     }
     else if(Controller.ButtonL2.pressing()) {
       armMotor.spin(reverse, armSpeed, vex::velocityUnits::pct);
+    }
+    else {
+      armMotor.stop(brakeType::hold);
     }
     //move lever up to 90 degrees (needs finetuning)
     //leverMotor.setPosition(0,degrees);
