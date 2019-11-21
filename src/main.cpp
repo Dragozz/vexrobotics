@@ -35,6 +35,7 @@ vex::motor_group rightGroup = vex::motor_group(rightMotor1, rightMotor2);
 //vex::gyro GYRO = vex::gyro(Brain.ThreeWirePort.A);
 //vex::smartdrive base = vex::smartdrive(leftGroup, rightGroup, GYRO, 319, 320, 130, distanceUnits::mm, 1);
 int intakeSpeed = 100;
+int chassisSpeed = 100;
 int armSpeed = 100;
 int leverSpeed = 50;
 int rate = 1;
@@ -110,26 +111,45 @@ void pre_auton(void) {
 /*                                                                           */
 /*  You must modify the code to add your own robot specific commands here.   */
 /*---------------------------------------------------------------------------*/
-
+double circumferenceOfRobot = 259.338;
+void moveForward(rotationUnits units, double distance){
+  leftMotor1.rotateFor((distance/circumferenceOfRobot), units);
+  leftMotor2.rotateFor((distance/circumferenceOfRobot), units);
+  rightMotor1.rotateFor((distance/circumferenceOfRobot), units);
+  rightMotor2.rotateFor((distance/circumferenceOfRobot), units);
+}
+void turn(bool right, double revolutions){
+  int revo = revolutions;
+  if(!right)
+    revo = -revolutions;
+  leftMotor1.rotateFor(revo, rev);
+  leftMotor2.rotateFor(revo, rev);
+  rightMotor1.rotateFor(-revo, rev);
+  rightMotor2.rotateFor(-revo, rev);
+}
+void intakeCubes(){
+  intakeMotor1.spin(forward, intakeSpeed, vex::velocityUnits::pct);
+  intakeMotor2.spin(forward, intakeSpeed, vex::velocityUnits::pct);
+}
 void autonomous(void) {
-  // ..........................................................................
-  // Insert autonomous user code here.
-  // ..........................................................................
-  // //while(GYRO.value(rotationUnits::deg) < 90)
-  // base.driveFor(directionType::fwd, 609.6, distanceUnits::mm);
-  // base.turnFor(180, degrees);
-  // armMotor.rotateFor(90, rotationUnits::rev);
-  // base.turnFor(180, degrees);
-  // vex::task::sleep(1000);
-  // armMotor.rotateFor(-90, rotationUnits::rev);
-  // base.driveFor(directionType::fwd, 100, distanceUnits::mm);
-  // intakeMotor1.rotateFor(500, rotationUnits::rev);
-  // intakeMotor2.rotateFor(500, rotationUnits::rev);
-  // base.turnFor(-90, degrees);
-  // base.driveFor(directionType::fwd, 1217, distanceUnits::mm);
-  // base.turnFor(-90, degrees);
-  // base.driveFor(directionType::fwd, 1217, distanceUnits::mm);
-  // leverMotor.rotateFor(45, degrees);
+  moveForward(rev, 609.6);
+  intakeCubes();
+  vex::task::sleep(5000);
+  moveForward(rev, 304.8);
+  turn(true, 500);
+  moveForward(rev, 304.8);
+  vex::task::sleep(3000);
+  moveForward(rev, 100);
+  turn(true, 500);
+  moveForward(rev, 1219.2);
+  turn(false, 500);
+  intakeMotor1.stop();
+  intakeMotor2.stop();
+  moveForward(rev, 304.8);
+  leverMotor.rotateFor(3000, rev);
+  //each square is 2x2 ft
+  //distance/circumferenceWheel = rotations
+  
 }
 //
 //  void auton(void) { //auton with vs
