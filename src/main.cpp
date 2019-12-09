@@ -21,14 +21,14 @@ using namespace vex;
 competition Competition;
 
 // define your global instances of motors and other devices here
-vex::motor leftMotor1 = vex::motor(vex::PORT1);
-vex::motor leftMotor2 = vex::motor(vex::PORT2);
-vex::motor rightMotor1 = vex::motor(vex::PORT3, true);
-vex::motor rightMotor2 = vex::motor(vex::PORT4, true);
-vex::motor intakeMotor1 = vex::motor(vex::PORT5, vex::gearSetting::ratio36_1); //torque motor
-vex::motor intakeMotor2 = vex::motor(vex::PORT6, vex::gearSetting::ratio36_1, true); //torque motor
-vex::motor armMotor = vex::motor(vex::PORT7); //change to torque motor later
-vex::motor leverMotor = vex::motor(vex::PORT8, vex::gearSetting::ratio36_1); //torque motor
+vex::motor leftMotor1 = vex::motor(vex::PORT14);
+vex::motor leftMotor2 = vex::motor(vex::PORT15);
+vex::motor rightMotor1 = vex::motor(vex::PORT18, true);
+vex::motor rightMotor2 = vex::motor(vex::PORT19, true);
+vex::motor intakeMotor1 = vex::motor(vex::PORT11, vex::gearSetting::ratio36_1); //torque motor
+vex::motor intakeMotor2 = vex::motor(vex::PORT20, vex::gearSetting::ratio36_1, true); //torque motor
+vex::motor armMotor = vex::motor(vex::PORT12, vex::gearSetting::ratio36_1); //torque motor
+vex::motor leverMotor = vex::motor(vex::PORT13, vex::gearSetting::ratio36_1); //torque motor
 vex::controller Controller = vex::controller();
 vex::motor_group leftGroup = vex::motor_group(leftMotor1, leftMotor2);
 vex::motor_group rightGroup = vex::motor_group(rightMotor1, rightMotor2);
@@ -37,7 +37,7 @@ vex::motor_group rightGroup = vex::motor_group(rightMotor1, rightMotor2);
 int intakeSpeed = 100;
 int chassisSpeed = 100;
 int armSpeed = 100;
-int leverSpeed = 50;
+int leverSpeed = 35;
 int rate = 1;
 bool intakeOn = false;
 bool speed = false;
@@ -245,31 +245,58 @@ void usercontrol(void) {
     Controller.ButtonA.pressed(toggleSpeed);
     //manual control for arm
     if(Controller.ButtonL1.pressing()) {
-      armMotor.spin(forward, armSpeed, vex::velocityUnits::pct);
+      armMotor.spin(reverse, armSpeed, vex::velocityUnits::pct);
     }
     else if(Controller.ButtonL2.pressing()) {
-      armMotor.spin(reverse, armSpeed, vex::velocityUnits::pct);
+      armMotor.spin(forward, armSpeed, vex::velocityUnits::pct);
     }
     else {
       armMotor.stop(brakeType::hold);
     }
-    //move lever up to 90 degrees (needs finetuning)
-    //leverMotor.setPosition(0,degrees);
-    // if(Controller.ButtonUp.pressing()) {
-    //   leverMotor.rotateFor(-1000, rev, leverSpeed, vex::velocityUnits::pct, false);
-    //   //leverMotor.resetPosition();
-    // }
-    // //move lever back down (needs finetuning)
-    // else if(Controller.ButtonDown.pressing()) {
-    //   leverMotor.rotateFor(1000, rev, leverSpeed, vex::velocityUnits::pct, false);
-    //   //leverMotor.resetPosition();
-    // }
+    //move lever up to 80 degrees 
+    if(Controller.ButtonUp.pressing()) {
+      // while(leverMotor.position(rev) < 1.2) {
+      //   leverMotor.spin(forward, leverSpeed, vex::percentUnits::pct);
+      // }
+      leverMotor.rotateTo(400, rotationUnits::raw, false);
+      Controller.Screen.clearScreen();
+      Controller.Screen.print("%f", leverMotor.position(rev));
+      //leverMotor.stop();
+    }
+    //move lever back down to origin
+    else if(Controller.ButtonDown.pressing()) {
+      // while(leverMotor.position(rev) > 0.1) {
+      //   leverMotor.spin(reverse, leverSpeed, vex::percentUnits::pct);
+      // }
+      // leverMotor.stop();
+      leverMotor.rotateTo(0, rev, false);
+    }
+    //move arm (and lever) up to tower height
+    if(Controller.ButtonLeft.pressing()) {
+      // leverMotor.spin(forward, leverSpeed/2, vex::percentUnits::pct);
+      // while(armMotor.position(rev) > -1) {
+      //   armMotor.spin(reverse, armSpeed, vex::velocityUnits::pct);
+      // }
+      // leverMotor.stop();
+      leverMotor.rotateTo(0.8, rev, false);
+      armMotor.rotateTo(-1, rev, false);
+    }
+    //move arm (and lever) back down
+    if(Controller.ButtonRight.pressing()) {
+      // leverMotor.spin(reverse, leverSpeed, vex::percentUnits::pct);
+      // while(armMotor.position(rev) < 0) {
+      //   armMotor.spin(forward, armSpeed, vex::velocityUnits::pct);
+      // }
+      // leverMotor.stop();
+      leverMotor.rotateTo(0, rev, false);
+      armMotor.rotateTo(0, rev, false);
+    }
     //manual control for lever
     if(Controller.ButtonX.pressing()) {
-      leverMotor.spin(reverse, leverSpeed, vex::percentUnits::pct);
+      leverMotor.spin(forward, leverSpeed, vex::percentUnits::pct);
     }
     else if(Controller.ButtonB.pressing()) {
-      leverMotor.spin(forward, leverSpeed, vex::percentUnits::pct);
+      leverMotor.spin(reverse, leverSpeed, vex::percentUnits::pct);
     }
     else {
       leverMotor.stop(brakeType::hold);
