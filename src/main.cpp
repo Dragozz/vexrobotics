@@ -255,41 +255,57 @@ void usercontrol(void) {
     }
     //move lever up to 80 degrees 
     if(Controller.ButtonUp.pressing()) {
-      // while(leverMotor.position(rev) < 1.2) {
-      //   leverMotor.spin(forward, leverSpeed, vex::percentUnits::pct);
-      // }
-      leverMotor.rotateTo(400, rotationUnits::raw, false);
-      Controller.Screen.clearScreen();
-      Controller.Screen.print("%f", leverMotor.position(rev));
-      //leverMotor.stop();
+      while(leverMotor.position(rev) < 1.25) {
+        if(Controller.ButtonY.pressing()) 
+          break;
+        leftMotor1.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
+        leftMotor2.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
+        rightMotor1.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct);
+        rightMotor2.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct); 
+        leverMotor.spin(forward, leverSpeed, vex::percentUnits::pct);
+      }
+      leverMotor.stop();
     }
     //move lever back down to origin
     else if(Controller.ButtonDown.pressing()) {
-      // while(leverMotor.position(rev) > 0.1) {
-      //   leverMotor.spin(reverse, leverSpeed, vex::percentUnits::pct);
-      // }
-      // leverMotor.stop();
-      leverMotor.rotateTo(0, rev, false);
+      while(leverMotor.position(rev) > 0.1) {
+        if(Controller.ButtonY.pressing()) 
+          break;
+        leftMotor1.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
+        leftMotor2.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
+        rightMotor1.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct);
+        rightMotor2.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct); 
+        leverMotor.spin(reverse, leverSpeed, vex::percentUnits::pct);
+      }
+      leverMotor.stop();
     }
     //move arm (and lever) up to tower height
     if(Controller.ButtonLeft.pressing()) {
-      // leverMotor.spin(forward, leverSpeed/2, vex::percentUnits::pct);
-      // while(armMotor.position(rev) > -1) {
-      //   armMotor.spin(reverse, armSpeed, vex::velocityUnits::pct);
-      // }
-      // leverMotor.stop();
-      leverMotor.rotateTo(0.8, rev, false);
-      armMotor.rotateTo(-1, rev, false);
+      leverMotor.spin(forward, leverSpeed, vex::percentUnits::pct);
+      while(armMotor.position(rev) > -1) {
+        if(Controller.ButtonY.pressing()) 
+          break;
+        leftMotor1.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
+        leftMotor2.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
+        rightMotor1.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct);
+        rightMotor2.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct); 
+        armMotor.spin(reverse, armSpeed, vex::velocityUnits::pct);
+      }
+      leverMotor.stop();
     }
     //move arm (and lever) back down
     if(Controller.ButtonRight.pressing()) {
-      // leverMotor.spin(reverse, leverSpeed, vex::percentUnits::pct);
-      // while(armMotor.position(rev) < 0) {
-      //   armMotor.spin(forward, armSpeed, vex::velocityUnits::pct);
-      // }
-      // leverMotor.stop();
-      leverMotor.rotateTo(0, rev, false);
-      armMotor.rotateTo(0, rev, false);
+      leverMotor.spin(reverse, leverSpeed, vex::percentUnits::pct);
+      while(armMotor.position(rev) < 0) {
+        if(Controller.ButtonY.pressing()) 
+          break;
+        leftMotor1.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
+        leftMotor2.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
+        rightMotor1.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct);
+        rightMotor2.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct); 
+        armMotor.spin(forward, armSpeed, vex::velocityUnits::pct);
+      }
+      leverMotor.stop();
     }
     //manual control for lever
     if(Controller.ButtonX.pressing()) {
