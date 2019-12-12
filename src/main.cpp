@@ -223,6 +223,8 @@ void usercontrol(void) {
     // update your motors, etc.
     // ........................................................................
     //chassis movement
+    if(leverMotor.position(rev) > 0.6)
+      rate = 2;
     leftMotor1.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
     leftMotor2.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
     rightMotor1.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct);
