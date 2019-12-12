@@ -132,17 +132,16 @@ void intakeCubes(){
   intakeMotor2.spin(forward, intakeSpeed, vex::velocityUnits::pct);
 }
 void autonomous(void) {
-  moveForward(rev, 609.6);
   intakeCubes();
-  vex::task::sleep(5000);
-  moveForward(rev, 304.8);
+  moveForward(rev, 2*609.6);
+  moveForward(rev, -2*609.6);
   turn(true, 500);
-  moveForward(rev, 304.8);
-  vex::task::sleep(3000);
-  moveForward(rev, 100);
+  moveForward(rev, 609.6);
   turn(true, 500);
-  moveForward(rev, 1219.2);
+  moveForward(rev, 609.6);
+  moveForward(rev, -1219.2);
   turn(false, 500);
+  moveForward(rev, 1219.2);
   intakeMotor1.stop();
   intakeMotor2.stop();
   moveForward(rev, 304.8);
