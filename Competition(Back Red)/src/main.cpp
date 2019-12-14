@@ -25,11 +25,12 @@ vex::motor leftMotor1 = vex::motor(vex::PORT14);
 vex::motor leftMotor2 = vex::motor(vex::PORT15);
 vex::motor rightMotor1 = vex::motor(vex::PORT18, true);
 vex::motor rightMotor2 = vex::motor(vex::PORT19, true);
-vex::motor intakeMotor1 = vex::motor(vex::PORT11, vex::gearSetting::ratio36_1); //torque motor
-vex::motor intakeMotor2 = vex::motor(vex::PORT20, vex::gearSetting::ratio36_1, true); //torque motor
+vex::motor intakeMotor1 = vex::motor(vex::PORT11); 
+vex::motor intakeMotor2 = vex::motor(vex::PORT20, true); 
 vex::motor armMotor = vex::motor(vex::PORT12, vex::gearSetting::ratio36_1); //torque motor
 vex::motor leverMotor = vex::motor(vex::PORT13, vex::gearSetting::ratio36_1); //torque motor
-vex::controller Controller = vex::controller();
+vex::controller Controller = vex::controller(vex::controllerType::primary);
+vex::controller Controller2 = vex::controller(vex::controllerType::partner);
 vex::motor_group leftGroup = vex::motor_group(leftMotor1, leftMotor2);
 vex::motor_group rightGroup = vex::motor_group(rightMotor1, rightMotor2);
 //vex::gyro GYRO = vex::gyro(Brain.ThreeWirePort.A);
@@ -39,6 +40,7 @@ int chassisSpeed = 100;
 int armSpeed = 100;
 int leverSpeed = 35;
 int rate = 1;
+int leverRate = 4;
 bool intakeOn = false;
 bool speed = false;
 bool userControl = true;
@@ -75,11 +77,11 @@ bool userControl = true;
      speed = false;
    }
    else if(!speed) {
-     rate = 2;
+     rate = 4;
      Controller.Screen.clearScreen();
      Controller.Screen.setCursor(1, 1);
      Controller.Screen.newLine();
-     Controller.Screen.print("\nNow at 50% speed.");
+     Controller.Screen.print("\nNow at 25% speed.");
      speed = true;
    }
  }
@@ -112,40 +114,63 @@ void pre_auton(void) {
 /*  You must modify the code to add your own robot specific commands here.   */
 /*---------------------------------------------------------------------------*/
 double circumferenceOfRobot = 259.338;
-void moveForward(rotationUnits units, double distance){
-  leftMotor1.rotateFor((distance/circumferenceOfRobot), units);
-  leftMotor2.rotateFor((distance/circumferenceOfRobot), units);
-  rightMotor1.rotateFor((distance/circumferenceOfRobot), units);
-  rightMotor2.rotateFor((distance/circumferenceOfRobot), units);
+void moveForward(rotationUnits units, double distance, int speed){
+  leftMotor1.rotateFor((distance/circumferenceOfRobot), units, speed, vex::velocityUnits::pct, false);
+  leftMotor2.rotateFor((distance/circumferenceOfRobot), units, speed, vex::velocityUnits::pct,false);
+  rightMotor1.rotateFor((distance/circumferenceOfRobot), units, speed, vex::velocityUnits::pct,false);
+  rightMotor2.rotateFor((distance/circumferenceOfRobot), units, speed, vex::velocityUnits::pct);
 }
 void turn(bool right, double revolutions){
   int revo = revolutions;
   if(!right)
     revo = -revolutions;
-  leftMotor1.rotateFor(revo, rev);
-  leftMotor2.rotateFor(revo, rev);
-  rightMotor1.rotateFor(-revo, rev);
+  leftMotor1.rotateFor(revo, rev, false);
+  leftMotor2.rotateFor(revo, rev, false);
+  rightMotor1.rotateFor(-revo, rev, false);
   rightMotor2.rotateFor(-revo, rev);
 }
 void intakeCubes(){
   intakeMotor1.spin(forward, intakeSpeed, vex::velocityUnits::pct);
   intakeMotor2.spin(forward, intakeSpeed, vex::velocityUnits::pct);
 }
+void releaseCubes() {
+  intakeMotor1.rotateFor(-0.4, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
+  intakeMotor2.rotateFor(-0.4, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
+}
 void autonomous(void) {
   intakeCubes();
-  moveForward(rev, 2*609.6);
-  moveForward(rev, -2*609.6);
-  turn(true, 500);
-  moveForward(rev, 609.6);
-  turn(true, 500);
-  moveForward(rev, 609.6);
-  moveForward(rev, -1219.2);
-  turn(false, 500);
-  moveForward(rev, 1219.2);
+  moveForward(rev, 1.25*609.6, 20);
+  //moveForward(rev, -1.75*609.6);
+  turn(true, 1.95);
   intakeMotor1.stop();
   intakeMotor2.stop();
-  moveForward(rev, 304.8);
-  leverMotor.rotateFor(3000, rev);
+  releaseCubes();
+  moveForward(rev, 1.05*609.6, 60);
+  moveForward(rev, -30, 60);
+  while(leverMotor.position(rev) < 1.25) {
+    leverMotor.spin(forward, leverSpeed/1.3, vex::percentUnits::pct);
+  }
+  moveForward(rev, 35, 5);
+  vex::task::sleep(250);
+  moveForward(rev, -100, 10);
+  vex::task::sleep(250);
+  while(leverMotor.position(rev) > 0.1) {
+    // intakeMotor1.spin(reverse, intakeSpeed/6, vex::velocityUnits::pct);
+    // intakeMotor2.spin(reverse, intakeSpeed/6, vex::velocityUnits::pct);
+    leverMotor.spin(reverse, leverSpeed/1.3, vex::percentUnits::pct);
+  }
+  // turn(true, 500);
+  // moveForward(rev, 609.6);
+  // turn(true, 500);
+  // moveForward(rev, 609.6);
+  // moveForward(rev, -1219.2);
+  // turn(false, 500);
+  // moveForward(rev, 1219.2);
+  // intakeMotor1.stop();
+  // intakeMotor2.stop();
+  // moveForward(rev, 304.8);
+  // leverMotor.rotateFor(3000, rev);
+  //
   //each square is 2x2 ft
   //distance/circumferenceWheel = rotations
   
@@ -223,19 +248,16 @@ void usercontrol(void) {
     // update your motors, etc.
     // ........................................................................
     //chassis movement
-    if(leverMotor.position(rev) > 0.6)
-      rate = 2;
     leftMotor1.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
     leftMotor2.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
     rightMotor1.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct);
     rightMotor2.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct); 
     //toggle intake
-    //Controller.ButtonR1.pressed(intake);
-    if(Controller.ButtonR1.pressing()) {
+    if(Controller.ButtonR1.pressing()) { //intake in
       intakeMotor1.spin(forward, intakeSpeed, vex::velocityUnits::pct);
       intakeMotor2.spin(forward, intakeSpeed, vex::velocityUnits::pct);
     }
-    else if(Controller.ButtonR2.pressing()) {
+    else if(Controller.ButtonR2.pressing()) { //intake out
       intakeMotor1.spin(reverse, intakeSpeed, vex::velocityUnits::pct);
       intakeMotor2.spin(reverse, intakeSpeed, vex::velocityUnits::pct);
     }
@@ -245,32 +267,32 @@ void usercontrol(void) {
     }
     Controller.ButtonA.pressed(toggleSpeed);
     //manual control for arm
-    if(Controller.ButtonL1.pressing()) {
+    if(Controller2.ButtonL1.pressing()) { //arm up
       armMotor.spin(reverse, armSpeed, vex::velocityUnits::pct);
     }
-    else if(Controller.ButtonL2.pressing()) {
+    else if(Controller2.ButtonL2.pressing()) { //arm down
       armMotor.spin(forward, armSpeed, vex::velocityUnits::pct);
     }
     else {
       armMotor.stop(brakeType::hold);
     }
     //move lever up to 80 degrees 
-    if(Controller.ButtonUp.pressing()) {
+    if(Controller2.ButtonR1.pressing()) {
       while(leverMotor.position(rev) < 1.25) {
-        if(Controller.ButtonY.pressing()) 
+        if(Controller.ButtonY.pressing() || Controller2.ButtonY.pressing()) 
           break;
-        leftMotor1.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
-        leftMotor2.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
-        rightMotor1.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct);
-        rightMotor2.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct); 
+        leftMotor1.spin(forward, Controller.Axis3.position()/leverRate, vex::velocityUnits::pct);
+        leftMotor2.spin(forward, Controller.Axis3.position()/leverRate, vex::velocityUnits::pct);
+        rightMotor1.spin(forward, Controller.Axis2.position()/leverRate, vex::velocityUnits::pct);
+        rightMotor2.spin(forward, Controller.Axis2.position()/leverRate, vex::velocityUnits::pct); 
         leverMotor.spin(forward, leverSpeed, vex::percentUnits::pct);
       }
       leverMotor.stop();
     }
     //move lever back down to origin
-    else if(Controller.ButtonDown.pressing()) {
+    else if(Controller2.ButtonR2.pressing()) {
       while(leverMotor.position(rev) > 0.1) {
-        if(Controller.ButtonY.pressing()) 
+        if(Controller.ButtonY.pressing() || Controller2.ButtonY.pressing()) 
           break;
         leftMotor1.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
         leftMotor2.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
@@ -280,11 +302,37 @@ void usercontrol(void) {
       }
       leverMotor.stop();
     }
-    //move arm (and lever) up to tower height
-    if(Controller.ButtonLeft.pressing()) {
+    //move arm (and lever) up to preset height
+    if(Controller2.ButtonLeft.pressing()) { //small tower
+      leverMotor.spin(forward, leverSpeed, vex::percentUnits::pct);
+      while(armMotor.position(rev) > -0.95) {
+        if(Controller.ButtonY.pressing() || Controller2.ButtonY.pressing()) 
+          break;
+        leftMotor1.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
+        leftMotor2.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
+        rightMotor1.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct);
+        rightMotor2.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct); 
+        armMotor.spin(reverse, armSpeed, vex::velocityUnits::pct);
+      }
+      leverMotor.stop();
+    }
+    if(Controller2.ButtonRight.pressing()) { //medium tower
       leverMotor.spin(forward, leverSpeed, vex::percentUnits::pct);
       while(armMotor.position(rev) > -1) {
-        if(Controller.ButtonY.pressing()) 
+        if(Controller.ButtonY.pressing() || Controller2.ButtonY.pressing()) 
+          break;
+        leftMotor1.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
+        leftMotor2.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
+        rightMotor1.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct);
+        rightMotor2.spin(forward, Controller.Axis2.position()/rate, vex::velocityUnits::pct); 
+        armMotor.spin(reverse, armSpeed, vex::velocityUnits::pct);
+      }
+      leverMotor.stop();
+    }
+    if(Controller2.ButtonUp.pressing()) { //tall tower
+      leverMotor.spin(forward, leverSpeed, vex::percentUnits::pct);
+      while(armMotor.position(rev) > -1.3) {
+        if(Controller.ButtonY.pressing() || Controller2.ButtonY.pressing()) 
           break;
         leftMotor1.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
         leftMotor2.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
@@ -295,10 +343,10 @@ void usercontrol(void) {
       leverMotor.stop();
     }
     //move arm (and lever) back down
-    if(Controller.ButtonRight.pressing()) {
+    if(Controller2.ButtonDown.pressing()) {
       leverMotor.spin(reverse, leverSpeed, vex::percentUnits::pct);
       while(armMotor.position(rev) < 0) {
-        if(Controller.ButtonY.pressing()) 
+        if(Controller.ButtonY.pressing() || Controller2.ButtonY.pressing()) 
           break;
         leftMotor1.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
         leftMotor2.spin(forward, Controller.Axis3.position()/rate, vex::velocityUnits::pct);
