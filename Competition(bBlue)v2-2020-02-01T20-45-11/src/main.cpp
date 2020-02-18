@@ -114,6 +114,47 @@ bool userControl = true;
      wait(20, msec);
    }
  }
+int slewRate(int lYRequested, int rYRequested) {
+  int lYLastSent = 0, rYLastSent = 0;
+  int lY, rY;
+  int slewRateLimit = 15, threshold = 15;
+  bool slowMode = false;
+  while(true){
+    lYRequested = leftGroup.velocity(velocityUnits::pct);
+    rYRequested = rightGroup.velocity(velocityUnits::pct);
+    if(abs(lYRequested - lYLastSent) > slewRateLimit){
+        if(lYRequested > lYLastSent) {
+          lY += slewRateLimit;
+        }else{
+          lY -= slewRateLimit;
+        }
+    }else{
+      lY = (lYRequested == 0) ? 0 : lY;
+    }
+
+    lYLastSent = lY;
+
+    if(abs(rYRequested - rYLastSent) > slewRateLimit) {
+      if(rYRequested > rYLastSent) {
+        rY+= slewRateLimit;
+      }else{
+        rY-=slewRateLimit;
+      }
+    }else{
+      rY = (rYRequested == 0) ? 0 : rY;
+    }
+
+    rYLastSent = rY;
+  
+    leftGroup.setVelocity((abs(lY) > threshold) ? lY: 0, velocityUnits::pct);
+    rightGroup.setVelocity((abs(rY) > threshold) ? rY: 0, velocityUnits::pct);
+    wait(20, msec);
+
+  }
+  return 0;
+
+}
+
 // function to toggle speed from 100% to 50% speed and vice versa
  void toggleSpeed() {
    if(speed) {
@@ -194,8 +235,8 @@ void intakeCubes(){
   intakeMotor2.spin(forward, intakeSpeed, vex::velocityUnits::pct);
 }
 void releaseCubes() {
-  intakeMotor1.rotateFor(-0.4, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
-  intakeMotor2.rotateFor(-0.4, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
+  intakeMotor1.rotateFor(-0.7, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
+  intakeMotor2.rotateFor(-0.7, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
 }
 void releaseCubesSlow() {
   intakeMotor1.rotateFor(-0.1, rev, intakeSpeed/6, vex::velocityUnits::pct, false);
@@ -220,14 +261,15 @@ void autonomous(void) { //original auton (at BOTB)
   intakeCubes();
   moveForward(35, 30);
   turnLeft(100);
-  moveForward(24, 30);
-  vex::task::sleep(500);
   intakeMotor1.stop();
   intakeMotor2.stop();
+  moveForward(24, 30);
+  vex::task::sleep(500);
   releaseCubes();
   //turnRight(27);
   //moveForward(11, 30);
   //moveForward(-3, 60);
+  releaseCubes();
   moveLeverUp(leverSpeed);
   vex::task::sleep(250);
   intakeMotor1.stop();
@@ -315,6 +357,8 @@ void usercontrol(void) {
     leftMotor2.spin(forward, Controller.Axis3.position()/1.1/rate, vex::velocityUnits::pct);
     rightMotor1.spin(forward, Controller.Axis2.position()/1.1/rate, vex::velocityUnits::pct);
     rightMotor2.spin(forward, Controller.Axis2.position()/1.1/rate, vex::velocityUnits::pct); 
+    //task::resume(slewRate(Controller.Axis3.position(), Controller.Axis2.position()));
+    //vex::task driving(slewRate(Controller.Axis3.position(), Controller.Axis2.position()));
     //toggle intake
     if(Controller.ButtonR1.pressing()) { //intake in
       intakeMotor1.spin(forward, intakeSpeed, vex::velocityUnits::pct);

@@ -180,22 +180,13 @@ void turnRight(double distance) {
 void turnLeft(double distance) {
   chassis.turnFor(-distance, rotationUnits::deg, true);
 }
-void turn(bool right, double revolutions){
-  double revo = revolutions;
-  if(!right)
-    revo = -revolutions;
-  leftMotor1.rotateFor(revo, rev, false);
-  leftMotor2.rotateFor(revo, rev, false);
-  rightMotor1.rotateFor(-revo, rev, false);
-  rightMotor2.rotateFor(-revo, rev);
-}
 void intakeCubes(){
   intakeMotor1.spin(forward, intakeSpeed, vex::velocityUnits::pct);
   intakeMotor2.spin(forward, intakeSpeed, vex::velocityUnits::pct);
 }
 void releaseCubes() {
-  intakeMotor1.rotateFor(-0.4, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
-  intakeMotor2.rotateFor(-0.4, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
+  intakeMotor1.rotateFor(-0.7, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
+  intakeMotor2.rotateFor(-0.7, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
 }
 void releaseCubesSlow() {
   intakeMotor1.rotateFor(-0.1, rev, intakeSpeed/6, vex::velocityUnits::pct, false);
@@ -205,7 +196,7 @@ void moveLeverUp(double speed) {
   leverMotor.setVelocity(speed, percentUnits::pct);
   //intakeMotor1.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
   //intakeMotor2.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
-  leverMotor.rotateTo(1.57, rev, true);
+  leverMotor.rotateTo(1.55, rev, true);
 }
 void moveLeverDown(double speed) {
   leverMotor.setVelocity(speed, percentUnits::pct);
@@ -219,12 +210,13 @@ void autonomous(void) { //original auton (at BOTB)
   moveArms(armSpeed, 0, true);
   intakeCubes();
   moveForward(35, 30);
-  turnRight(100);
-  moveForward(24, 30);
-  vex::task::sleep(500);
+  turnRight(103);
   intakeMotor1.stop();
   intakeMotor2.stop();
+  moveForward(24, 30);
+  vex::task::sleep(500);
   releaseCubes();
+  moveForward(3, 10);
   //turnRight(27);
   //moveForward(11, 30);
   //moveForward(-3, 60);
@@ -232,7 +224,7 @@ void autonomous(void) { //original auton (at BOTB)
   vex::task::sleep(250);
   intakeMotor1.stop();
   intakeMotor2.stop();
-  moveForward(1, 5);
+  moveForward(2, 5);
   vex::task::sleep(250);
   intakeMotor1.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
   intakeMotor2.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
@@ -339,14 +331,6 @@ void usercontrol(void) {
     else {
       armMotor.stop(brakeType::hold);
     }
-    // //move lever up to 80 degrees 
-    // if(Controller2.ButtonR1.pressing()) {
-    //   moveLeverUp(leverSpeed);
-    // }
-    // //move lever back down to origin
-    // else if(Controller2.ButtonR2.pressing()) {
-    //   moveLeverDown(leverSpeed);
-    // }
     //move arm up to preset height
     if(Controller.ButtonLeft.pressing()) { //small & medium tower
       moveArms(armSpeed, -0.9, true);
