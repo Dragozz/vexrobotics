@@ -380,6 +380,18 @@ void moveLeverDown(double speed) {
 void moveArms(double speed, double distance, bool wait) {
   armMotor.rotateTo(distance, rev, speed, velocityUnits::pct, wait);
 }
+double errorH;
+double robotAngle;
+void setRobotAngleFwd(double angleSet, double averageSpeed) {
+  errorH = angleSet - robotAngle;
+  leftGroup.spin(forward, (averageSpeed + errorH*kpAngle, pct));
+  rightGroup.spin(forward, (averageSpeed - errorH*kpAngle, pct));
+}
+void setRobotAngleRev(double angleSet, double averageSpeed) {
+  errorH = robotAngle - angleSet;;
+  leftGroup.spin(reverse, (averageSpeed + errorH*kpAngle, pct));
+  rightGroup.spin(reverse, (averageSpeed - errorH*kpAngle, pct));
+}
 void autonomous(void) { //original auton (at BOTB)
   bool bBlue = buttons[0].state;
   bool fBlue = buttons[1].state;
