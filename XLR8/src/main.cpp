@@ -36,9 +36,9 @@ vex::controller Controller = vex::controller(vex::controllerType::primary);
 vex::controller Controller2 = vex::controller(vex::controllerType::partner);
 vex::motor_group leftGroup = vex::motor_group(leftMotor1, leftMotor2);
 vex::motor_group rightGroup = vex::motor_group(rightMotor1, rightMotor2);
-vex::inertial GYRO = vex::inertial(vex::PORT22);
-//vex::gyro GYRO = vex::gyro(Brain.ThreeWirePort.A);
+vex::inertial GYRO = vex::inertial(vex::PORT4);
 vex::drivetrain chassis = vex::drivetrain(leftGroup, rightGroup);
+vex::smartdrive chassiss = vex::smartdrive(leftGroup, rightGroup, GYRO);
 int lYRequested, rYRequested = 0;
 int intakeSpeed = 100;
 int chassisSpeed = 100;
@@ -380,19 +380,86 @@ void moveLeverDown(double speed) {
 void moveArms(double speed, double distance, bool wait) {
   armMotor.rotateTo(distance, rev, speed, velocityUnits::pct, wait);
 }
-double errorH;
-double robotAngle;
-void setRobotAngleFwd(double angleSet, double averageSpeed) {
-  errorH = angleSet - robotAngle;
-  leftGroup.spin(forward, (averageSpeed + errorH*kpAngle, pct));
-  rightGroup.spin(forward, (averageSpeed - errorH*kpAngle, pct));
+// void setRobotAngleFwd(double angleSet, double averageSpeed) {
+//   errorH = angleSet - robotAngle;
+//   leftGroup.spin(forward, (averageSpeed + errorH*kpAngle, pct));
+//   rightGroup.spin(forward, (averageSpeed - errorH*kpAngle, pct));
+// }
+// void setRobotAngleRev(double angleSet, double averageSpeed) {
+//   errorH = robotAngle - angleSet;;
+//   leftGroup.spin(reverse, (averageSpeed + errorH*kpAngle, pct));
+//   rightGroup.spin(reverse, (averageSpeed - errorH*kpAngle, pct));
+// }
+void turnRightGyro(int deg) {
+  GYRO.resetRotation();
+  while(GYRO.rotation(degrees) <= deg) {
+    // leftGroup.spin(forward);
+    // rightGroup.spin(reverse);
+    chassis.turn(right);
+  }
+  // leftGroup.stop();
+  // rightGroup.stop();
+  chassis.stop();
 }
-void setRobotAngleRev(double angleSet, double averageSpeed) {
-  errorH = robotAngle - angleSet;;
-  leftGroup.spin(reverse, (averageSpeed + errorH*kpAngle, pct));
-  rightGroup.spin(reverse, (averageSpeed - errorH*kpAngle, pct));
+void turnLeftGyro(int deg) {
+  GYRO.resetRotation();
+  while(GYRO.rotation(degrees) >= -deg) {
+    // leftGroup.spin(reverse);
+    // rightGroup.spin(forward);
+    chassis.turn(left);
+  }
+  // leftGroup.stop();
+  // rightGroup.stop();
+  chassis.stop();
 }
-void autonomous(void) { //original auton (at BOTB)
+int autonSlewLimit = 20;
+void moveForwardSlew(double distance){
+    double speed = 0;
+    leftGroup.rotateFor(distance, rev, speed, velocityUnits::pct, false);
+    rightGroup.rotateFor(distance, rev, speed, velocityUnits::pct, false);
+    while(leftGroup.position(rev) < distance/2) {
+      leftGroup.setVelocity(leftGroup.velocity(velocityUnits::pct) + autonSlewLimit, velocityUnits::pct);
+      rightGroup.setVelocity(rightGroup.velocity(velocityUnits::pct) + autonSlewLimit, velocityUnits::pct);
+      speed += autonSlewLimit;
+      wait(20, msec);
+    }
+    while(leftGroup.position(rev) < distance) {
+      leftGroup.setVelocity(leftGroup.velocity(velocityUnits::pct) - autonSlewLimit, velocityUnits::pct);
+      rightGroup.setVelocity(rightGroup.velocity(velocityUnits::pct) - autonSlewLimit, velocityUnits::pct);
+      speed -= autonSlewLimit;
+      wait(20, msec);
+    }
+}
+void moveBackwardSlew(double distance, int speed){
+  chassis.setDriveVelocity(speed, percentUnits::pct);
+  chassis.driveFor(directionType::fwd, distance, distanceUnits::in, true);
+  double offset = 2;
+  while(offset!=0){
+    offset = speed- chassis.velocity(percentUnits::pct);
+    if(offset >= autonSlewLimit){
+      chassis.setDriveVelocity(chassis.velocity(percentUnits::pct) + autonSlewLimit, percentUnits::pct);
+    }else if(offset <= -autonSlewLimit){
+      chassis.setDriveVelocity(chassis.velocity(percentUnits::pct) - autonSlewLimit, percentUnits::pct);
+    }else{
+      chassis.setDriveVelocity(chassis.velocity(percentUnits::pct)+offset, percentUnits::pct);
+    }
+    wait(20, msec);
+  }
+}
+void autonomous(void) {
+  // GYRO.calibrate();
+  // while(GYRO.isCalibrating()){
+  //   wait(100, msec);
+  // }
+  // moveForward(40, 100);
+  // vex::task::sleep(2000);
+  moveForwardSlew(50);
+  //moveBackwardSlew(40, 100);
+  // turnRightGyro(90);
+  // vex::task::sleep(2000);
+  // turnLeftGyro(90);
+}
+void autonomouss(void) { //original auton (at BOTB)
   bool bBlue = buttons[0].state;
   bool fBlue = buttons[1].state;
   bool bRed = buttons[2].state;
@@ -557,7 +624,7 @@ void autonomous(void) { //original auton (at BOTB)
 /*                                                                           */
 /*  You must modify the code to add your own robot specific commands here.   */
 /*---------------------------------------------------------------------------*/
-int slewRateLimit = 25;
+int slewRateLimit = 35;
 double leftSlew(double axis){
   double difference = axis-leftGroup.velocity(velocityUnits::pct);
   if(difference >= slewRateLimit) {
@@ -596,8 +663,8 @@ void usercontrol(void) {
     // update your motors, etc.
     // ........................................................................
     //chassis movement
-    leftGroup.spin(forward, leftSlew(Controller.Axis3.position()),vex::velocityUnits::pct);
-    rightGroup.spin(forward, rightSlew(Controller.Axis2.position()),vex::velocityUnits::pct);
+    leftGroup.spin(forward, Controller.Axis3.position(),vex::velocityUnits::pct);
+    rightGroup.spin(forward, Controller.Axis2.position(),vex::velocityUnits::pct);
     // leftMotor1.spin(forward, Controller.Axis3.position(), vex::velocityUnits::pct);
     // leftMotor2.spin(forward, Controller.Axis3.position(), vex::velocityUnits::pct);
     // rightMotor1.spin(forward, Controller.Axis2.position(), vex::velocityUnits::pct);
