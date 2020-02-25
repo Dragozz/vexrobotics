@@ -14,6 +14,8 @@
 
 #include "vex.h"
 #include <math.h>
+#include <string.h>
+#include <iostream>
 //#include "vision.h"
 
 using namespace vex;
@@ -37,6 +39,7 @@ vex::motor_group rightGroup = vex::motor_group(rightMotor1, rightMotor2);
 vex::inertial GYRO = vex::inertial(vex::PORT22);
 //vex::gyro GYRO = vex::gyro(Brain.ThreeWirePort.A);
 vex::drivetrain chassis = vex::drivetrain(leftGroup, rightGroup);
+int lYRequested, rYRequested = 0;
 int intakeSpeed = 100;
 int chassisSpeed = 100;
 int armSpeed = 100;
@@ -46,6 +49,7 @@ int leverRate = 4;
 bool intakeOn = false;
 bool speed = false;
 bool userControl = true;
+int autonomousSelection = -1;
   // function to calculate biggest of 3 numbers
   // int max(int i, int j, int k) {
   //   if(i > j && i > k)
@@ -68,6 +72,128 @@ bool userControl = true;
   //     intakeOn = true;
   //   }
   // }
+typedef struct _button {
+  int xpos;
+  int ypos;
+  int width;
+  int height;
+  bool state;
+  vex::color offColor;
+  vex::color onColor;
+  const char *label;
+} button;
+// Button array definitions for each software button. The purpose ofeach button data structure
+// is defined above. The array size can be extended, so you can have as many buttons as you
+// wish as long as it fits.
+button buttons[] = { 
+  { 30, 30, 60, 60, false, 0xE00000, 0x0000E0, "bBlue" },
+  { 150, 30, 60, 60, false, 0xE00000, 0x0000E0, "fBlue" },
+  { 270, 30, 60, 60, false, 0xE00000, 0x0000E0, "bRed" },
+  { 390, 30, 60, 60, false, 0xE00000, 0x0000E0, "fRed" }
+};
+// forward ref
+void displayButtonControls( int index, bool pressed );
+
+/*-----------------------------------------------------------------------------*/
+/** @brief      Check if touch is inside button                                */
+/*-----------------------------------------------------------------------------*/
+int findButton(  int16_t xpos, int16_t ypos ) {
+    int nButtons = sizeof(buttons) / sizeof(button);
+
+    for( int index=0;index < nButtons;index++) {
+      button *pButton = &buttons[ index ];
+      if( xpos < pButton->xpos || xpos > (pButton->xpos + pButton->width) )
+        continue;
+
+      if( ypos < pButton->ypos || ypos > (pButton->ypos + pButton->height) )
+        continue;
+
+      return(index);
+    }
+    return (-1);
+}
+
+/*-----------------------------------------------------------------------------*/
+/** @brief      Init button states                                             */
+/*-----------------------------------------------------------------------------*/
+void initButtons() {
+    int nButtons = sizeof(buttons) / sizeof(button);
+
+    for( int index=0;index < nButtons;index++) {
+      buttons[index].state = false;
+    }
+}
+
+/*-----------------------------------------------------------------------------*/
+/** @brief      Screen has been touched                                        */
+/*-----------------------------------------------------------------------------*/
+void userTouchCallbackPressed() {
+    int index;
+    int xpos = Brain.Screen.xPosition();
+    int ypos = Brain.Screen.yPosition();
+
+    if( (index = findButton( xpos, ypos )) >= 0 ) {
+      displayButtonControls( index, true );
+    }
+
+}
+
+/*-----------------------------------------------------------------------------*/
+/** @brief      Screen has been (un)touched                                    */
+/*-----------------------------------------------------------------------------*/
+void userTouchCallbackReleased() {
+    int index;
+    int xpos = Brain.Screen.xPosition();
+    int ypos = Brain.Screen.yPosition();
+
+    if( (index = findButton( xpos, ypos )) >= 0 ) {
+      // clear all buttons to false, ie. unselected
+      //      initButtons(); 
+
+      // now set this one as true
+      if( buttons[index].state == true) {
+      buttons[index].state = false; }
+      else    {
+      buttons[index].state = true;}
+
+      // save as auton selection
+      autonomousSelection = index;
+
+      displayButtonControls( index, false );
+    }
+}
+
+/*-----------------------------------------------------------------------------*/
+/** @brief      Draw all buttons                                               */
+/*-----------------------------------------------------------------------------*/
+void displayButtonControls( int index, bool pressed ) {
+    vex::color c;
+    Brain.Screen.setPenColor( vex::color(0xe0e0e0) );
+
+    for(int i=0;i<sizeof(buttons)/sizeof(button);i++) {
+
+      if( buttons[i].state )
+        c = buttons[i].onColor;
+      else
+        c = buttons[i].offColor;
+
+      Brain.Screen.setFillColor( c );
+
+      // button fill
+      if( i == index && pressed == true ) {
+        Brain.Screen.drawRectangle( buttons[i].xpos, buttons[i].ypos, buttons[i].width, buttons[i].height, c );
+      }
+      else
+        Brain.Screen.drawRectangle( buttons[i].xpos, buttons[i].ypos, buttons[i].width, buttons[i].height );
+
+      // outline
+      Brain.Screen.drawRectangle( buttons[i].xpos, buttons[i].ypos, buttons[i].width, buttons[i].height, vex::color::transparent );
+
+// draw label
+      if(  buttons[i].label != NULL )
+        Brain.Screen.printAt( buttons[i].xpos + 8, buttons[i].ypos + buttons[i].height - 8, buttons[i].label );
+    }
+}
  void leftPIDController(int setpoint) {
    double Kp = 0.0;
    double Ki = 0.0;
@@ -114,7 +240,7 @@ bool userControl = true;
      wait(20, msec);
    }
  }
-int slewRate(int lYRequested, int rYRequested) {
+void slewRate() {
   int lYLastSent = 0, rYLastSent = 0;
   int lY, rY;
   int slewRateLimit = 15, threshold = 15;
@@ -151,7 +277,6 @@ int slewRate(int lYRequested, int rYRequested) {
     wait(20, msec);
 
   }
-  return 0;
 
 }
 
@@ -256,30 +381,112 @@ void moveArms(double speed, double distance, bool wait) {
   armMotor.rotateTo(distance, rev, speed, velocityUnits::pct, wait);
 }
 void autonomous(void) { //original auton (at BOTB)
-  moveArms(armSpeed, -1, true);
-  moveArms(armSpeed, 0, true);
-  intakeCubes();
-  moveForward(35, 30);
-  turnLeft(100);
-  intakeMotor1.stop();
-  intakeMotor2.stop();
-  moveForward(24, 30);
-  vex::task::sleep(500);
-  releaseCubes();
-  //turnRight(27);
-  //moveForward(11, 30);
-  //moveForward(-3, 60);
-  releaseCubes();
-  moveLeverUp(leverSpeed);
-  vex::task::sleep(250);
-  intakeMotor1.stop();
-  intakeMotor2.stop();
-  moveForward(1, 5);
-  vex::task::sleep(250);
-  intakeMotor1.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
-  intakeMotor2.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
-  moveForward(-15, 30);
-  moveLeverDown(leverSpeed/4);
+  bool bBlue = buttons[0].state;
+  bool fBlue = buttons[1].state;
+  bool bRed = buttons[2].state;
+  bool fRed = buttons[3].state;
+  if(bBlue) {
+    moveArms(armSpeed, -1, true);
+    moveArms(armSpeed, 0, true);
+    intakeCubes();
+    moveForward(35, 30);
+    turnLeft(100);
+    intakeMotor1.stop();
+    intakeMotor2.stop();
+    moveForward(24, 30);
+    vex::task::sleep(500);
+    releaseCubes();
+    //turnRight(27);
+    //moveForward(11, 30);
+    //moveForward(-3, 60);
+    releaseCubes();
+    moveLeverUp(leverSpeed);
+    vex::task::sleep(250);
+    intakeMotor1.stop();
+    intakeMotor2.stop();
+    moveForward(1, 5);
+    vex::task::sleep(250);
+    intakeMotor1.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
+    intakeMotor2.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
+    moveForward(-15, 30);
+    moveLeverDown(leverSpeed/4);
+  }
+  else if(fBlue) {
+    moveArms(armSpeed, -1, true);
+    moveArms(armSpeed, 0, true);
+    intakeCubes();
+    moveForward(20.4, 30);
+    turnRight(61);
+    moveForward(18, 30);
+    vex::task::sleep(500);
+    intakeMotor1.stop();
+    intakeMotor2.stop();
+    releaseCubes();
+    turnRight(27);
+    moveForward(11, 30);
+    //moveForward(-3, 60);
+    moveLeverUp(leverSpeed);
+    vex::task::sleep(250);
+    intakeMotor1.stop();
+    intakeMotor2.stop();
+    moveForward(1, 5);
+    vex::task::sleep(250);
+    intakeMotor1.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
+    intakeMotor2.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
+    moveForward(-15, 30);
+    moveLeverDown(leverSpeed/4);
+  }
+  else if(bRed) {
+    moveArms(armSpeed, -1, true);
+    moveArms(armSpeed, 0, true);
+    intakeCubes();
+    moveForward(35, 30);
+    turnRight(103);
+    intakeMotor1.stop();
+    intakeMotor2.stop();
+    moveForward(24, 30);
+    vex::task::sleep(500);
+    releaseCubes();
+    moveForward(3, 10);
+    //turnRight(27);
+    //moveForward(11, 30);
+    //moveForward(-3, 60);
+    moveLeverUp(leverSpeed);
+    vex::task::sleep(250);
+    intakeMotor1.stop();
+    intakeMotor2.stop();
+    moveForward(2, 5);
+    vex::task::sleep(250);
+    intakeMotor1.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
+    intakeMotor2.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
+    moveForward(-15, 30);
+    moveLeverDown(leverSpeed/4);
+  }
+  else if(fRed) {
+    moveArms(armSpeed, -1, true);
+    moveArms(armSpeed, 0, true);
+    intakeCubes();
+    moveForward(20.4, 30);
+    turnLeft(61);
+    moveForward(18, 30);
+    vex::task::sleep(500);
+    intakeMotor1.stop();
+    intakeMotor2.stop();
+    releaseCubes();
+    turnLeft(27);
+    moveForward(11, 30);
+    //moveForward(-3, 60);
+    moveLeverUp(leverSpeed);
+    vex::task::sleep(250);
+    intakeMotor1.stop();
+    intakeMotor2.stop();
+    moveForward(1, 5);
+    vex::task::sleep(250);
+    intakeMotor1.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
+    intakeMotor2.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
+    moveForward(-15, 30);
+    moveLeverDown(leverSpeed/4);
+  }
 }
 //  void auton(void) { //auton with vs
 //   vision::object *cube;
@@ -338,7 +545,31 @@ void autonomous(void) { //original auton (at BOTB)
 /*                                                                           */
 /*  You must modify the code to add your own robot specific commands here.   */
 /*---------------------------------------------------------------------------*/
-
+int slewRateLimit = 25;
+double leftSlew(double axis){
+  double difference = axis-leftGroup.velocity(velocityUnits::pct);
+  if(difference >= slewRateLimit) {
+    return leftGroup.velocity(velocityUnits::pct) + slewRateLimit;
+  }
+  else if(difference <= -slewRateLimit) {
+    return leftGroup.velocity(velocityUnits::pct) - slewRateLimit;
+  }
+  else {
+    return leftGroup.velocity(velocityUnits::pct) + difference;
+  }
+}
+double rightSlew(double axis) {
+  double difference = axis-rightGroup.velocity(velocityUnits::pct);
+  if(difference >= slewRateLimit) {
+     return rightGroup.velocity(velocityUnits::pct) + slewRateLimit;
+  }
+  else if(difference <= -slewRateLimit) {
+    return rightGroup.velocity(velocityUnits::pct) - slewRateLimit;
+  }
+  else {
+    return rightGroup.velocity(velocityUnits::pct) + difference;
+  }
+}
 void usercontrol(void) {
   // User control code here, inside the loop
   Brain.Screen.print("User Program has Started.");
@@ -353,12 +584,14 @@ void usercontrol(void) {
     // update your motors, etc.
     // ........................................................................
     //chassis movement
-    leftMotor1.spin(forward, Controller.Axis3.position()/1.1/rate, vex::velocityUnits::pct);
-    leftMotor2.spin(forward, Controller.Axis3.position()/1.1/rate, vex::velocityUnits::pct);
-    rightMotor1.spin(forward, Controller.Axis2.position()/1.1/rate, vex::velocityUnits::pct);
-    rightMotor2.spin(forward, Controller.Axis2.position()/1.1/rate, vex::velocityUnits::pct); 
-    //task::resume(slewRate(Controller.Axis3.position(), Controller.Axis2.position()));
-    //vex::task driving(slewRate(Controller.Axis3.position(), Controller.Axis2.position()));
+    leftGroup.spin(forward, leftSlew(Controller.Axis3.position()),vex::velocityUnits::pct);
+    rightGroup.spin(forward, rightSlew(Controller.Axis2.position()),vex::velocityUnits::pct);
+    // leftMotor1.spin(forward, Controller.Axis3.position(), vex::velocityUnits::pct);
+    // leftMotor2.spin(forward, Controller.Axis3.position(), vex::velocityUnits::pct);
+    // rightMotor1.spin(forward, Controller.Axis2.position(), vex::velocityUnits::pct);
+    // rightMotor2.spin(forward, Controller.Axis2.position(), vex::velocityUnits::pct); 
+    // task::resume(slewRate(Controller.Axis3.position(), Controller.Axis2.position()));
+    //vex::thread(slewRate).detach();
     //toggle intake
     if(Controller.ButtonR1.pressing()) { //intake in
       intakeMotor1.spin(forward, intakeSpeed, vex::velocityUnits::pct);
@@ -393,7 +626,7 @@ void usercontrol(void) {
     // }
     //move arm up to preset height
     if(Controller.ButtonLeft.pressing()) { //small & medium tower
-      moveArms(armSpeed, -0.9, true);
+      moveArms(armSpeed, -0.95, true);
     }
     if(Controller.ButtonRight.pressing()) { //lever preset to stack
       moveLeverUp(leverSpeed);
@@ -426,13 +659,42 @@ void usercontrol(void) {
 //
 // Main will set up the competition functions and callbacks.
 //
+//vex::thread *ourThread;
 int main() {
   // Set up callbacks for autonomous and driver control periods.
+  // lYRequested = Controller.Axis3.position();
+  // rYRequested = Controller.Axis2.position();
+  //ourThread = new vex::thread(slewRate);
   Competition.autonomous(autonomous);
   Competition.drivercontrol(usercontrol);
+// register events for button selection
+    Brain.Screen.pressed( userTouchCallbackPressed );
+    Brain.Screen.released( userTouchCallbackReleased );
 
+    // make nice background
+    Brain.Screen.setFillColor( vex::color(0x404040) );
+    Brain.Screen.setPenColor( vex::color(0x404040) );
+    Brain.Screen.drawRectangle( 0, 0, 480, 120 );
+    Brain.Screen.setFillColor( vex::color(0x808080) );
+    Brain.Screen.setPenColor( vex::color(0x808080) );
+    Brain.Screen.drawRectangle( 0, 120, 480, 120 );
+
+    // initial display
+    displayButtonControls( 0, false );
+
+    while(1) {
+        // Allow other tasks to run
+        if( !Competition.isEnabled() )
+            Brain.Screen.setFont(fontType::mono40);
+        Brain.Screen.setFillColor( vex::color(0xFFFFFF) );
+
+        Brain.Screen.setPenColor( vex::color(0xc11f27));
+        Brain.Screen.printAt( 0,  135, "  XLR8  " );
+        this_thread::sleep_for(10);
+    }
   // Run the pre-autonomous function.
   pre_auton();
+  
 
   // Prevent main from exiting with an infinite loop.
   while (true) {
