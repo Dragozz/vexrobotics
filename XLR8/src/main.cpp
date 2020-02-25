@@ -240,45 +240,45 @@ void displayButtonControls( int index, bool pressed ) {
      wait(20, msec);
    }
  }
-void slewRate() {
-  int lYLastSent = 0, rYLastSent = 0;
-  int lY, rY;
-  int slewRateLimit = 15, threshold = 15;
-  bool slowMode = false;
-  while(true){
-    lYRequested = leftGroup.velocity(velocityUnits::pct);
-    rYRequested = rightGroup.velocity(velocityUnits::pct);
-    if(abs(lYRequested - lYLastSent) > slewRateLimit){
-        if(lYRequested > lYLastSent) {
-          lY += slewRateLimit;
-        }else{
-          lY -= slewRateLimit;
-        }
-    }else{
-      lY = (lYRequested == 0) ? 0 : lY;
-    }
+// void slewRate() {
+//   int lYLastSent = 0, rYLastSent = 0;
+//   int lY, rY;
+//   int slewRateLimit = 15, threshold = 15;
+//   bool slowMode = false;
+//   while(true){
+//     lYRequested = leftGroup.velocity(velocityUnits::pct);
+//     rYRequested = rightGroup.velocity(velocityUnits::pct);
+//     if(abs(lYRequested - lYLastSent) > slewRateLimit){
+//         if(lYRequested > lYLastSent) {
+//           lY += slewRateLimit;
+//         }else{
+//           lY -= slewRateLimit;
+//         }
+//     }else{
+//       lY = (lYRequested == 0) ? 0 : lY;
+//     }
 
-    lYLastSent = lY;
+//     lYLastSent = lY;
 
-    if(abs(rYRequested - rYLastSent) > slewRateLimit) {
-      if(rYRequested > rYLastSent) {
-        rY+= slewRateLimit;
-      }else{
-        rY-=slewRateLimit;
-      }
-    }else{
-      rY = (rYRequested == 0) ? 0 : rY;
-    }
+//     if(abs(rYRequested - rYLastSent) > slewRateLimit) {
+//       if(rYRequested > rYLastSent) {
+//         rY+= slewRateLimit;
+//       }else{
+//         rY-=slewRateLimit;
+//       }
+//     }else{
+//       rY = (rYRequested == 0) ? 0 : rY;
+//     }
 
-    rYLastSent = rY;
+//     rYLastSent = rY;
   
-    leftGroup.setVelocity((abs(lY) > threshold) ? lY: 0, velocityUnits::pct);
-    rightGroup.setVelocity((abs(rY) > threshold) ? rY: 0, velocityUnits::pct);
-    wait(20, msec);
+//     leftGroup.setVelocity((abs(lY) > threshold) ? lY: 0, velocityUnits::pct);
+//     rightGroup.setVelocity((abs(rY) > threshold) ? rY: 0, velocityUnits::pct);
+//     wait(20, msec);
 
-  }
+//   }
 
-}
+// }
 
 // function to toggle speed from 100% to 50% speed and vice versa
  void toggleSpeed() {
@@ -336,8 +336,21 @@ double circumferenceOfRobot = 259.338;
 double cube_joystick_val(double input){
     return pow(input/100.0, 3.0)*100.0;
 }
+int autonSlewLimit = 25;
 void moveForward(double distance, int speed){
   chassis.setDriveVelocity(speed, percentUnits::pct);
+  double offset = 2;
+  while(offset!=0){
+    offset = speed- chassis.velocity(percentUnits::pct);
+    if(offset >= autonSlewLimit){
+      chassis.setDriveVelocity(chassis.velocity(percentUnits::pct)+autonSlewLimit, percentUnits::pct);
+    }else if(offset <= -autonSlewLimit){
+      chassis.setDriveVelocity(chassis.velocity(percentUnits::pct) + autonSlewLimit, percentUnits::pct);
+    }else{
+      chassis.setDriveVelocity(chassis.velocity(percentUnits::pct)+offset, percentUnits::pct);
+    }
+    wait(20, msec);
+  }
   chassis.driveFor(directionType::fwd, distance, distanceUnits::in, true);
 }
 void turnRight(double distance) {
