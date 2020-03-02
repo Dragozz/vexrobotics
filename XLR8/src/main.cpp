@@ -43,7 +43,6 @@ vex::pot potent = vex::pot(potPort.B);
 triport cubePort(PORT22);
 vex::line cubeSensor = vex::line(cubePort.A); //change this
 vex::drivetrain chassis = vex::drivetrain(leftGroup, rightGroup);
-vex::smartdrive chassiss = vex::smartdrive(leftGroup, rightGroup, GYRO);
 int lYRequested, rYRequested = 0;
 int intakeSpeed = 100;
 int chassisSpeed = 100;
