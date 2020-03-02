@@ -16,6 +16,7 @@
 #include <math.h>
 #include <string.h>
 #include <iostream>
+#include <vex_triport.h>
 //#include "vision.h"
 
 using namespace vex;
@@ -37,6 +38,10 @@ vex::controller Controller2 = vex::controller(vex::controllerType::partner);
 vex::motor_group leftGroup = vex::motor_group(leftMotor1, leftMotor2);
 vex::motor_group rightGroup = vex::motor_group(rightMotor1, rightMotor2);
 vex::inertial GYRO = vex::inertial(vex::PORT4);
+triport potPort(PORT22);
+vex::pot potent = vex::pot(potPort.B);
+triport cubePort(PORT22);
+vex::line cubeSensor = vex::line(cubePort.A); //change this
 vex::drivetrain chassis = vex::drivetrain(leftGroup, rightGroup);
 vex::smartdrive chassiss = vex::smartdrive(leftGroup, rightGroup, GYRO);
 int lYRequested, rYRequested = 0;
@@ -312,10 +317,10 @@ void slewRate() {
 void pre_auton(void) {
   // Initializing Robot Configuration. DO NOT REMOVE!
   vexcodeInit();
-  // GYRO.calibrate();
-  // while(GYRO.isCalibrating()){
-  //   wait(100, msec);
-  // }
+  GYRO.calibrate();
+  while(GYRO.isCalibrating()){
+    wait(100, msec);
+  }
   // GYRO.resetHeading();
   // GYRO.resetRotation();
   // All activities that occur before the competition starts
@@ -356,22 +361,28 @@ void turn(bool right, double revolutions){
   rightMotor2.rotateFor(-revo, rev);
 }
 void intakeCubes(){
-  intakeMotor1.spin(forward, intakeSpeed, vex::velocityUnits::pct);
-  intakeMotor2.spin(forward, intakeSpeed, vex::velocityUnits::pct);
+  intakeMotor1.spin(forward, intakeSpeed, vex::percentUnits::pct);
+  intakeMotor2.spin(forward, intakeSpeed, vex::percentUnits::pct);
 }
 void releaseCubes() {
-  intakeMotor1.rotateFor(-0.7, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
-  intakeMotor2.rotateFor(-0.7, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
+  intakeMotor1.rotateFor(-0.85, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
+  intakeMotor2.rotateFor(-0.85, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
 }
 void releaseCubesSlow() {
   intakeMotor1.rotateFor(-0.1, rev, intakeSpeed/6, vex::velocityUnits::pct, false);
   intakeMotor2.rotateFor(-0.1, rev, intakeSpeed/6, vex::velocityUnits::pct, false);
 }
-void moveLeverUp(double speed) {
-  leverMotor.setVelocity(speed, percentUnits::pct);
-  //intakeMotor1.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
-  //intakeMotor2.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
-  leverMotor.rotateTo(1.57, rev, true);
+void moveLeverUp() {
+  double targetPos = 70;
+  double scalar = 2;
+  while(potent.angle() < 70) { //lever preset to stack
+    double currentPos = potent.angle();
+    double error = targetPos - currentPos;
+    double speed = error*scalar;
+    if(speed < 10)
+      speed = 10;
+    leverMotor.spin(forward, speed, percentUnits::pct);
+  }
 }
 void moveLeverDown(double speed) {
   leverMotor.setVelocity(speed, percentUnits::pct);
@@ -446,49 +457,77 @@ void moveBackwardSlew(double distance, int speed){
     wait(20, msec);
   }
 }
+void intakeOneCube() {
+  while(true) {
+    double sensorValue = cubeSensor.value(analogUnits::range12bit);
+    Controller.Screen.print(sensorValue);
+    Controller.Screen.newLine();
+    if(sensorValue < 2800 && sensorValue > 1) {
+      Controller.Screen.print(sensorValue && "IN IFFFF");
+      intakeMotor1.stop();
+      intakeMotor2.stop();
+      break;
+    }
+    else {
+      intakeMotor1.spin(forward, intakeSpeed, vex::velocityUnits::pct);
+      intakeMotor2.spin(forward, intakeSpeed, vex::velocityUnits::pct);
+      chassis.drive(forward, 10, velocityUnits::pct);
+    }
+  }
+}
 void autonomous(void) {
   // GYRO.calibrate();
   // while(GYRO.isCalibrating()){
   //   wait(100, msec);
   // }
-  // moveForward(40, 100);
-  // vex::task::sleep(2000);
-  moveForwardSlew(50);
-  //moveBackwardSlew(40, 100);
+  // moveArms(armSpeed, -1, true);
+  // moveArms(armSpeed, 0, true);
+  intakeCubes();
+    moveForward(60, 50);
+    turnRightGyro(137);
+    intakeMotor1.stop();
+    intakeMotor2.stop();
+    moveForward(42, 50);
+    vex::task::sleep(500);
+    releaseCubes();
+    moveLeverUp();
+    releaseCubes();
+    moveForward(-10, 35);
+    vex::task::sleep(250);
+    moveLeverDown(70);
+  //
+  // intakeCubes();
+  // moveForward(20.4, 40);
   // turnRightGyro(90);
-  // vex::task::sleep(2000);
-  // turnLeftGyro(90);
+  // moveForward(18, 40);
+  // turnRightGyro(45);
+  // intakeMotor1.stop();
+  // intakeMotor2.stop();
+  // moveForward(11, 40);
+  // releaseCubes();
+  // moveLeverUp();
+  // releaseCubes();
+  // moveForward(-10, 35);
 }
 void autonomouss(void) { //original auton (at BOTB)
   bool bBlue = buttons[0].state;
   bool fBlue = buttons[1].state;
   bool bRed = buttons[2].state;
   bool fRed = buttons[3].state;
-  if(bBlue) {
+  if(bBlue) { //everything tested except arms at beginning
     moveArms(armSpeed, -1, true);
     moveArms(armSpeed, 0, true);
     intakeCubes();
-    moveForward(35, 30);
-    turnLeft(100);
+    moveForward(55, 50);
+    turnLeftGyro(136);
     intakeMotor1.stop();
     intakeMotor2.stop();
-    moveForward(24, 30);
+    moveForward(37, 50);
     vex::task::sleep(500);
     releaseCubes();
-    //turnRight(27);
-    //moveForward(11, 30);
-    //moveForward(-3, 60);
+    moveLeverUp();
     releaseCubes();
-    moveLeverUp(leverSpeed);
-    vex::task::sleep(250);
-    intakeMotor1.stop();
-    intakeMotor2.stop();
-    moveForward(1, 5);
-    vex::task::sleep(250);
-    intakeMotor1.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
-    intakeMotor2.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
-    moveForward(-15, 30);
-    moveLeverDown(leverSpeed/4);
+    moveForward(-10, 35);
   }
   else if(fBlue) {
     moveArms(armSpeed, -1, true);
@@ -504,7 +543,7 @@ void autonomouss(void) { //original auton (at BOTB)
     turnRight(27);
     moveForward(11, 30);
     //moveForward(-3, 60);
-    moveLeverUp(leverSpeed);
+    moveLeverUp();
     vex::task::sleep(250);
     intakeMotor1.stop();
     intakeMotor2.stop();
@@ -519,27 +558,16 @@ void autonomouss(void) { //original auton (at BOTB)
     moveArms(armSpeed, -1, true);
     moveArms(armSpeed, 0, true);
     intakeCubes();
-    moveForward(35, 30);
-    turnRight(103);
+    moveForward(55, 50);
+    turnRightGyro(136);
     intakeMotor1.stop();
     intakeMotor2.stop();
-    moveForward(24, 30);
+    moveForward(37, 50);
     vex::task::sleep(500);
     releaseCubes();
-    moveForward(3, 10);
-    //turnRight(27);
-    //moveForward(11, 30);
-    //moveForward(-3, 60);
-    moveLeverUp(leverSpeed);
-    vex::task::sleep(250);
-    intakeMotor1.stop();
-    intakeMotor2.stop();
-    moveForward(2, 5);
-    vex::task::sleep(250);
-    intakeMotor1.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
-    intakeMotor2.spin(reverse, intakeSpeed/8, vex::velocityUnits::pct);
-    moveForward(-15, 30);
-    moveLeverDown(leverSpeed/4);
+    moveLeverUp();
+    releaseCubes();
+    moveForward(-10, 35);
   }
   else if(fRed) {
     moveArms(armSpeed, -1, true);
@@ -555,7 +583,7 @@ void autonomouss(void) { //original auton (at BOTB)
     turnLeft(27);
     moveForward(11, 30);
     //moveForward(-3, 60);
-    moveLeverUp(leverSpeed);
+    moveLeverUp();
     vex::task::sleep(250);
     intakeMotor1.stop();
     intakeMotor2.stop();
@@ -707,9 +735,9 @@ void usercontrol(void) {
     if(Controller.ButtonLeft.pressing()) { //small & medium tower
       moveArms(armSpeed, -0.95, true);
     }
-    if(Controller.ButtonRight.pressing()) { //lever preset to stack
-      moveLeverUp(leverSpeed);
-    }
+    // while(Controller.ButtonRight.pressing() && potent.angle() < 70) {
+    //   leverMotor.spin(forward, leverSpeed, percentUnits::pct);
+    // }
     if(Controller.ButtonUp.pressing()) { //tall tower
       moveArms(armSpeed, -1.25, true);
     }
@@ -718,14 +746,20 @@ void usercontrol(void) {
       moveArms(armSpeed, 0, true);
     }
     //manual control for lever
+    double targetPos = 70;
+    double scalar = 2;
     if(Controller.ButtonX.pressing()) {
-      if(leverMotor.position(rev) < 1.1)
-        leverMotor.spin(forward, leverSpeed, velocityUnits::pct);
-      else 
-        leverMotor.spin(forward, leverSpeed/1.5, velocityUnits::pct);
+      while(Controller.ButtonX.pressing() && potent.angle() < 70) { //lever preset to stack
+        double currentPos = potent.angle();
+        double error = targetPos - currentPos;
+        double speed = error*scalar;
+        if(speed < 10)
+          speed = 10;
+        leverMotor.spin(forward, speed, percentUnits::pct);
+      }
     }
     else if(Controller.ButtonB.pressing()) {
-      leverMotor.spin(reverse, leverSpeed, velocityUnits::pct);
+      leverMotor.spin(reverse, 100, velocityUnits::pct);
     }
     else {
       leverMotor.stop(brakeType::hold);
