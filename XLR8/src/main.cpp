@@ -508,7 +508,7 @@ void autonomous(void) {
   // releaseCubes();
   // moveForward(-10, 35);
 }
-void autonomouss(void) { //original auton (at BOTB)
+void autonomouss(void) {
   bool bBlue = buttons[0].state;
   bool fBlue = buttons[1].state;
   bool bRed = buttons[2].state;
@@ -541,7 +541,6 @@ void autonomouss(void) { //original auton (at BOTB)
     releaseCubes();
     turnRight(27);
     moveForward(11, 30);
-    //moveForward(-3, 60);
     moveLeverUp();
     vex::task::sleep(250);
     intakeMotor1.stop();
