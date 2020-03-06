@@ -41,7 +41,7 @@ vex::inertial GYRO = vex::inertial(vex::PORT4);
 triport potPort(PORT22);
 vex::pot potent = vex::pot(potPort.B);
 triport cubePort(PORT22);
-vex::line cubeSensor = vex::line(cubePort.G); //change this
+vex::line cubeSensor = vex::line(cubePort.G); 
 triport armPort(PORT22);
 vex::pot potentArm = vex::pot(armPort.A);
 vex::drivetrain chassis = vex::drivetrain(leftGroup, rightGroup);
@@ -96,8 +96,8 @@ button buttons[] = {
   { 150, 30, 60, 60, false, 0xE00000, 0x0000E0, "fBlue" },
   { 270, 30, 60, 60, false, 0xE00000, 0x0000E0, "bRed" },
   { 390, 30, 60, 60, false, 0xE00000, 0x0000E0, "fRed" },
-  { 30, 150, 60, 60, false, 0x404040, 0xC0C0C0, "7bBlue" },
-  { 150, 150, 60, 60, false, 0x404040, 0xC0C0C0, "7bRed" }
+  { 30, 150, 60, 60, false, 0x404040, 0xC0C0C0, "5bBlue" },
+  { 150, 150, 60, 60, false, 0x404040, 0xC0C0C0, "5bRed" }
 };
 // forward ref
 void displayButtonControls( int index, bool pressed );
@@ -384,8 +384,6 @@ void moveLeverUp() {
     double speed = error*scalar;
     if(speed < 25)
       speed = 25;
-    if(potent.angle() >= 75)
-      speed = 0;
     leverMotor.spin(forward, speed, percentUnits::pct);
   }
 }
@@ -400,7 +398,6 @@ void moveArmsPotent(double speed, double angle) {
   armMotor.stop(brakeType::hold);
 }
 void moveArms(double speed, double distance, bool wait) {
-  //armMotor.setTimeout(2000, msec);
   armMotor.rotateTo(distance, rev, speed, velocityUnits::pct, wait);
 }
 void flipOutTray() {
@@ -497,39 +494,9 @@ void intakeOneCube() {
     }
   }
 }
-void autonomouss(void) {
-  flipOutTray();
-  intakeCubes();
-    moveForward(28.5, 40);
-    vex::task::sleep(50);
-    turnLeftGyro(78);
-    vex::task::sleep(50);
-    moveForward(20, 40);
-    vex::task::sleep(50);
-    turnLeftGyro(25);
-    vex::task::sleep(50);
-    intakeMotor1.stop();
-    intakeMotor2.stop();
-    moveForward(16, 40);
-    vex::task::sleep(200);
-    intakeMotor1.rotateFor(-0.7, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
-    intakeMotor2.rotateFor(-0.7, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
-    moveLeverUp();
-    vex::task::sleep(200);
-    releaseCubes();
-    moveForward(-10, 35);
-    vex::task::sleep(200);
-    moveLeverDown(50);
-}
 void autonomous(void) {
-  bool bBlue = buttons[0].state;
-  bool fBlue = buttons[1].state;
-  bool bRed = buttons[2].state;
-  bool fRed = buttons[3].state;
-  bool bBlueRisky = buttons[4].state;
-  bool bRedRisky = buttons[5].state;
-  if(bBlue) {
-    flipOutTray();
+  //back auton start
+  flipOutTray();
     intakeCubes();
     moveForward(55, 50);
     vex::task::sleep(100);
@@ -546,112 +513,80 @@ void autonomous(void) {
     moveForward(-10, 35);
     vex::task::sleep(100);
     moveLeverDown(50);
-  }
-  else if(fBlue) { //3 point (done)
-    flipOutTray();
-    intakeCubes();
-    moveForward(28.5, 40);
-    vex::task::sleep(50);
-    turnRightGyro(78);
-    vex::task::sleep(50);
-    moveForward(20, 40);
-    vex::task::sleep(50);
-    turnRightGyro(24);
-    vex::task::sleep(50);
-    intakeMotor1.stop();
-    intakeMotor2.stop();
-    moveForward(16, 40);
-    vex::task::sleep(200);
-    intakeMotor1.rotateFor(-0.7, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
-    intakeMotor2.rotateFor(-0.7, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
-    moveLeverUp();
-    vex::task::sleep(200);
-    releaseCubes();
-    moveForward(-10, 35);
-    vex::task::sleep(200);
-    moveLeverDown(50);
-  }
-  else if(bRed) { //5 point
-    flipOutTray();
-    intakeCubes();
-    moveForward(55, 50);
-    vex::task::sleep(100);
-    turnRightGyro(137);
-    vex::task::sleep(200);
-    intakeMotor1.stop();
-    intakeMotor2.stop();
-    moveForward(38, 50);
-    vex::task::sleep(200);
-    releaseCubes();
-    moveLeverUp();
-    vex::task::sleep(200);
-    releaseCubes();
-    moveForward(-10, 35);
-    vex::task::sleep(100);
-    moveLeverDown(50);
-  }
-  else if(fRed) { //3 point (done)
-    flipOutTray();
-    intakeCubes();
-    moveForward(28.5, 40);
-    vex::task::sleep(50);
-    turnLeftGyro(78);
-    vex::task::sleep(50);
-    moveForward(20, 40);
-    vex::task::sleep(50);
-    turnLeftGyro(25);
-    vex::task::sleep(50);
-    intakeMotor1.stop();
-    intakeMotor2.stop();
-    moveForward(16, 40);
-    vex::task::sleep(200);
-    intakeMotor1.rotateFor(-0.7, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
-    intakeMotor2.rotateFor(-0.7, rev, intakeSpeed/2, vex::velocityUnits::pct, false);
-    moveLeverUp();
-    vex::task::sleep(200);
-    releaseCubes();
-    moveForward(-10, 35);
-    vex::task::sleep(200);
-    moveLeverDown(50);
-  }
-  else if(bBlueRisky) { //not updated
-    intakeCubes();
-    moveForward(55, 50);
-    turnLeftGyro(136);
-    intakeMotor1.stop();
-    intakeMotor2.stop();
-    moveForward(37, 50);
-    vex::task::sleep(500);
-    releaseCubes();
-    moveLeverUp();
-    releaseCubes();
-    moveForward(-10, 35);
-    //
-  }
-  else if(bRedRisky) { //7 point
-    flipOutTray();
-    intakeCubes();
-    moveForward(41.25, 65);
-    vex::task::sleep(50);
-    turnLeftGyro(30);
-    moveForward(-41, 90);
-    vex::task::sleep(50);
-    turnRightGyro(23);
-    vex::task::sleep(100);
-    moveForward(50, 55);
+//end
+
+}
+void autonomousss(void) { //attempt at skills by tomas
+  //flipOutTray();
+  intakeCubes();
+  moveForward(41.5, 60);
+  turnLeftGyro(33);
+  moveForward(-42, 80);
+  vex::task::sleep(50);
+  turnRightGyro(21);
+  vex::task::sleep(100);
+  moveForward(50, 55);
+  // //5 point start
+  //   //moveForward(60, 55);
     turnRightGyro(139);
     intakeMotor1.stop();
     intakeMotor2.stop();
-    moveForward(44, 90);
+    moveForward(44, 70);
     vex::task::sleep(50);
     releaseCubes();
     moveLeverUp();
-    vex::task::sleep(50);
+    vex::task::sleep(100);
     releaseCubes();
     moveForward(-10, 35);
     vex::task::sleep(200);
     moveLeverDown(70);
-  }
+    moveForward(-30,55);
+    turnLeftGyro(135);
+    intakeCubes();
+    moveArmsPotent(100,20);
+    releaseCubes();
+
+  
+}
+void autonomouss(void) {
+  //flipOutTray();
+  intakeCubes();
+  moveForward(41.5, 60);
+  turnLeftGyro(33);
+  moveForward(-42, 80);
+  vex::task::sleep(50);
+  turnRightGyro(19);
+  vex::task::sleep(100);
+  moveForward(50, 55);
+  // //5 point start
+  //   //moveForward(60, 55);
+    turnRightGyro(139);
+    intakeMotor1.stop();
+    intakeMotor2.stop();
+    moveForward(44, 70);
+    vex::task::sleep(50);
+    releaseCubes();
+    moveLeverUp();
+    vex::task::sleep(100);
+    releaseCubes();
+    moveForward(-10, 35);
+    vex::task::sleep(200);
+    moveLeverDown(70);
+    //5 point end
+  // fBlue start
+  // intakeCubes();
+  // moveForward(20.4, 40);
+  // turnRightGyro(90);
+  // moveForward(18, 40);
+  // turnRightGyro(45);
+  // intakeMotor1.stop();
+  // intakeMotor2.stop();
+  // moveForward(11, 40);
+  // releaseCubes();
+  // moveLeverUp();
+  // releaseCubes();
+  // moveForward(-10, 35);
+  // fBlue end
 }
 //  void auton(void) { //auton with vs
 //   vision::object *cube;
@@ -749,8 +684,8 @@ void usercontrol(void) {
     // update your motors, etc.
     // ........................................................................
     //chassis movement
-    leftGroup.spin(forward, Controller.Axis3.position()/rate,vex::velocityUnits::pct);
-    rightGroup.spin(forward, Controller.Axis2.position()/rate,vex::velocityUnits::pct);
+    leftGroup.spin(forward, Controller.Axis3.position(),vex::velocityUnits::pct);
+    rightGroup.spin(forward, Controller.Axis2.position(),vex::velocityUnits::pct);
     // leftMotor1.spin(forward, Controller.Axis3.position(), vex::velocityUnits::pct);
     // leftMotor2.spin(forward, Controller.Axis3.position(), vex::velocityUnits::pct);
     // rightMotor1.spin(forward, Controller.Axis2.position(), vex::velocityUnits::pct);
@@ -836,6 +771,9 @@ void usercontrol(void) {
       }
       armMotor.stop();
       //armMotor.rotateTo(0, rev, armSpeed, velocityUnits::pct, true);
+    }
+    if(Controller.ButtonY.pressing()) {
+      flipOutTray();
     }
     //manual control for lever
     double targetPos = 70;
